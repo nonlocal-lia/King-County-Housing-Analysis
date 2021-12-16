@@ -6,9 +6,9 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def create_heatmap(df):
+def create_heatmap(df, size=(12,12)):
     corr = df.corr()
-    fig, ax = plt.subplots(figsize=(5, 8))
+    fig, ax = plt.subplots(figsize=size)
     sns.heatmap(
         data=corr, 
         mask=np.triu(np.ones_like(corr, dtype=bool)), 

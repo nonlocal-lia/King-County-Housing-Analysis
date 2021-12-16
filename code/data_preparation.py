@@ -19,7 +19,7 @@ def z_standardize(x):
     standard = (x-np.mean(x))/np.sqrt(np.var(x))
     return standard
 
-def log_normalize(df, columns):
+def log_normalize(df, columns, plus_1 = True):
     """
     Transforms column values into log values and normalizes them using z-scores
 
@@ -30,6 +30,10 @@ def log_normalize(df, columns):
     Return:
         df_norm(pdDataFrame): A dataframe with normalized log values in the specified columns
     """
+    if plus_1:
+        df_log = np.log(df[columns]+1)
+        df_norm = df_log.apply(z_standardize)
+        return df_norm
     df_log = np.log(df[columns])
     df_norm = df_log.apply(z_standardize)
     return df_norm
@@ -105,6 +109,7 @@ def one_hot_encode(df, column):
     ohe = OneHotEncoder(categories="auto", sparse=False, handle_unknown="ignore")
     ohe.fit(c)
     cat = ohe.categories_
+    cat = list(cat[0])
     encoded = ohe.transform(c)
     return cat, encoded
 
@@ -155,7 +160,7 @@ def mean_square_error(model, X_train, y_train, X_test, y_test):
     print('Test Mean Squarred Error:', test_mse)
     return train_mse,test_mse
 
-def cross_validate(model, X_train, y_train, splits=5, test_size=0.25, random_state=0):
+def cross_val(model, X_train, y_train, splits=5, test_size=0.25, random_state=0):
     """
     Gives the mean of the R-squared values for the model for the specified number of Kfolds
 
