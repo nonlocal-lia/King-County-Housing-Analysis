@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.impute import MissingIndicator, SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.metrics import mean_squared_error, make_scorer
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_validate, ShuffleSplit
 
 
 def z_standardize(x):
@@ -19,7 +19,7 @@ def z_standardize(x):
     standard = (x-np.mean(x))/np.sqrt(np.var(x))
     return standard
 
-def log_normalize(df, columns=df.columns):
+def log_normalize(df, columns):
     """
     Transforms column values into log values and normalizes them using z-scores
 
@@ -147,17 +147,15 @@ def mean_square_error(model, X_train, y_train, X_test, y_test):
         train_mse(float64): A float representing the mean square error of the model relative to the training data
         test_mse(float64): A float representing the mean square error of the model relative to the testing data
     """
-    y_hat_train = linreg.predict(X_train)
-    y_hat_test = linreg.predict(X_test)
-    train_residuals = y_hat_train - y_train
-    test_residuals = y_hat_test - y_test
+    y_hat_train = model.predict(X_train)
+    y_hat_test = model.predict(X_test)
     train_mse = mean_squared_error(y_train, y_hat_train)
     test_mse = mean_squared_error(y_test, y_hat_test)
     print('Train Mean Squarred Error:', train_mse)
     print('Test Mean Squarred Error:', test_mse)
     return train_mse,test_mse
 
-def cross_validate(model, predictors, target, folds=5):
+def cross_validate(model, X_train, y_train, splits=5, test_size=0.25, random_state=0):
     """
     Gives the mean of the R-squared values for the model for the specified number of Kfolds
 
@@ -168,9 +166,11 @@ def cross_validate(model, predictors, target, folds=5):
         fold(int64): The number of Kfolds to perform in the cross validation
 
     Return:
-        mean(float64): A float representing the mean R-value from the cross validations
+        Prints mean of the training and test R-squared scores
+        scores(dict): A dictionary containing arrays for the following keys: fit_time, score_time, test_score, train_score
     """
-    mse = make_scorer(mean_squared_error)
-    results = cross_val_score(model, predictors, target, cv=folds, scoring=mse)
-    mean = results.mean()
-    return mean
+    splitter = ShuffleSplit(n_splits=splits, test_size=test_size, random_state=random_state)
+    scores = cross_validate(estimator=model, X=X_train, y=y_train, return_train_score=True, cv=splitter)
+    print("Train score:     ", scores["train_score"].mean())
+    print("Validation score:", scores["test_score"].mean())
+    return scores
