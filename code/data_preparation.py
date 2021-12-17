@@ -16,8 +16,22 @@ def z_standardize(x):
     Return:
         standard(array): Standardized array 
     """
-    standard = (x-np.mean(x))/np.sqrt(np.var(x))
+    standard = (x-np.mean(x))/(np.std(x))
     return standard
+
+def destandardize(x, mean_used, std_used):
+    """
+    Reverses the standardization of an array using z-score
+
+    Arg:
+        x(array): Array to destandardize
+
+    Return:
+        destandard(array): Non-standardized array 
+    """
+    destandard = x * std_used + mean_used
+    return destandard
+
 
 def log_normalize(df, columns, plus_1 = True):
     """
@@ -37,6 +51,32 @@ def log_normalize(df, columns, plus_1 = True):
     df_log = np.log(df[columns])
     df_norm = df_log.apply(z_standardize)
     return df_norm
+
+def log_denormalize(df, columns, original_df, plus_1 = True):
+    """
+    Transforms column values that we log transformed and standardized using z-scores back to their original values.
+
+    Arg:
+        df(pdDataFrame): A dataframe with values to denormalize
+        columns(array): An array containing column names of the columns to denormalize
+
+    Return:
+        df_norm(pdDataFrame): A dataframe with denormalized values in the specified columns
+    """
+    mean = np.mean(np.log(original_df[columns]))
+    std = np.std(np.log(original_df[columns]))
+    df_log = pd.DataFrame()
+    df_denorm = pd.DataFrame()
+    if plus_1:
+        for column in columns:
+            df_log[column] = df[column].apply(destandardize, args=(mean[column], std[column]))
+            df_denorm[column] = np.exp(df_log[column])
+        return df_denorm
+    for column in columns:
+        df_log[column] = df[column].apply(destandardize, args=(mean[column], std[column]))
+        df_denorm[column] = np.exp(df_log[column])-1
+    return df_denorm
+
 
 def missing_indicator(df, column):
     """
@@ -179,3 +219,11 @@ def cross_val(model, X_train, y_train, splits=5, test_size=0.25, random_state=0)
     print("Train score:     ", scores["train_score"].mean())
     print("Validation score:", scores["test_score"].mean())
     return scores
+
+def predict_median_effect(column, df, original_df, model, target = 'price'):
+    predict_df = pd.DataFrame()
+    median = df.groupby(column).median().reset_index()
+    predict_df[column] = median[column]
+    predict_df[target] = model.predict(median)
+    predict_df[[column, target]] = log_denormalize(predict_df, [column, target], original_df, plus_1 = True)
+    return predict_df
