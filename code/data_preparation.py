@@ -187,9 +187,9 @@ def collinearity_check(df, min=0.75, max=1, exclude_max=True):
         return check[(check.cc >= min) & (check.cc < max)]
     return check[(check.cc >= min) & (check.cc <= max)]
 
-def mean_square_error(model, X_train, y_train, X_test, y_test):
+def unstandard_mean_sq_error(model, X_train, y_train, X_test, y_test, scaler=None):
     """
-    Gives the mean of the R-squared values for the model for the specified number of Kfolds
+    Gives the mean square error in the original units using the scikit scaler used to scale the data.
 
     Arg:
         model: Linear regression model produced from sklearn LinearRegression
@@ -197,6 +197,7 @@ def mean_square_error(model, X_train, y_train, X_test, y_test):
         y_train(pdSeries): A series containing the target varible the model was trained on
         X_test(pdDataFrame): A dataframe containing all the predictor variables the model will be tested against
         y_test(pdSeries): A series containing the target varible the model will be tested against
+        scaler: a scikit scaler used to scale the target with the target column as the first value
 
     Return:
         Prints both training and test mse
@@ -207,6 +208,9 @@ def mean_square_error(model, X_train, y_train, X_test, y_test):
     y_hat_test = model.predict(X_test)
     train_mse = mean_squared_error(y_train, y_hat_train)
     test_mse = mean_squared_error(y_test, y_hat_test)
+    if scaler:
+        train_mse = np.expm1(train_mse*scaler.scale_[0]+scaler.mean_[0])
+        test_mse = np.expm1(test_mse*scaler.scale_[0]+scaler.mean_[0])
     print('Train Mean Squarred Error:', train_mse)
     print('Test Mean Squarred Error:', test_mse)
     return train_mse,test_mse
@@ -232,6 +236,22 @@ def cross_val(model, X_train, y_train, splits=5, test_size=0.25, random_state=0)
     return scores
 
 def predict_median_effect(df, variable_column, scaled_columns, scaler, model, target = 'price'):
+    """
+    Produce a dataframe containing predictions for the target variable from the model for the median values
+    in the input variable column.
+
+    Arg:
+        df(pdDataFrame): a dataframe containing the training data of the model
+        variable_column(str): a label of a variable column in the training data
+        scaled_columns(list): a list of all the names of the columns that were log scaled
+        scaler: the scikit scaler used to scale the columns listed
+        model: a scikit linear regression model produced from the training data
+        target: the name of the target variable the model predicts the values of
+
+    Return:
+        predict_df(pdDataFrame): a DataFrame containing predictions for the target variable from the model for the median values
+        in the input variable column
+    """
     median_df = df.groupby(variable_column).median().reset_index()
     median_df.insert(0, target, model.predict(median_df))
     predict_df = median_df[scaled_columns]
@@ -239,6 +259,23 @@ def predict_median_effect(df, variable_column, scaled_columns, scaler, model, ta
     return predict_df
 
 def predict_difference(model, data, variable, low, high, scaler, scaled_cols, target='price'):
+    """
+    Give the difference in the models prediction about the target variable between the median home with the low variable value
+    and the median home with the high variable value.
+
+    Arg:
+        model: Linear regression model produced from sklearn LinearRegression
+        data(pdDataFrame): training data the model was run on
+        variable(str): the variable name to predict the difference from
+        low: lower variable value, must be one in training data
+        high: lower variable value, must be one in training data
+        scaler: the scikit scaler used to scale the training data
+        scaled_cols(list): a list of string labeling the columns that were log scaled
+        target(str): name of the target variable predicted by the model
+
+    Return
+        difference(float): a float representing the difference in the low and high predictions 
+    """
     z = list(zip(scaler.mean_, scaler.scale_))
     scale_dict = dict(zip(scaled_cols, z))
     if variable in scaled_cols:
@@ -253,6 +290,39 @@ def predict_difference(model, data, variable, low, high, scaler, scaled_cols, ta
     high_variables = data.groupby(variable).median().reset_index()
     high_variables = high_variables[high_variables[variable] == standard_high]
     high_prediction = model.predict(high_variables)
-    raw_difference = high_prediction - low_prediction
-    difference = np.expm1(raw_difference*scale_dict[target][1] + scale_dict[target][0])
+    low_stand = np.expm1(low_prediction*scale_dict[target][1] + scale_dict[target][0])
+    high_stand = np.expm1(high_prediction*scale_dict[target][1] + scale_dict[target][0])
+    difference = high_stand - low_stand
     return float(difference)
+
+def give_prediction(model, variables, scaler, scaled_columns, target='price'):
+    """
+    Gives prediction about the target variable in unscaled values from unscaled variable inputs
+
+    Arg:
+        model: a scikit linear regression model
+        variables(list): a list of the variable columns the model was run on in original order
+        scaler: the scikit scaler object used to scale the data
+        scaled_columns(list): a list of the names of the variables that were log scaled
+        target(str): name of the target varible that is predicted
+    
+    Return:
+        prediction(float): a float representing the predicted value
+    """
+    z = list(zip(scaler.mean_, scaler.scale_))
+    scale_dict = dict(zip(scaled_columns, z))
+    values = []
+    for variable in variables:
+        print('Input {}:'.format(variable))
+        raw_value = float(input())
+        if variable in scaled_columns:
+            value = (np.log1p(raw_value)-scale_dict[variable][0])/scale_dict[variable][1]
+        else:
+            value = raw_value
+        values.append(value)
+    array_values = np.array(values)
+    prediction = np.sum(array_values * model.coef_) + model.intercept_
+    prediction = np.expm1(prediction*scale_dict[target][1] + scale_dict[target][0])
+    return round(prediction, ndigits=2)
+
+
