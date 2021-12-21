@@ -1,41 +1,44 @@
 import numpy as np
 import pandas as pd
 from sklearn.impute import MissingIndicator, SimpleImputer
-from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, FunctionTransformer, StandardScaler
 from sklearn.metrics import mean_squared_error, make_scorer
 from sklearn.model_selection import cross_validate, ShuffleSplit
 
 
 def z_standardize(x):
     """
-    Standardizes array using z-score
+    Standardizes array using z-score and produces a sklearn scaler object for standarizing/destandarizing
 
     Arg:
         x(array): Array to standardize
 
     Return:
         standard(array): Standardized array 
+        scaler: a scaler object from the scikit preprocessing module
     """
-    standard = (x-np.mean(x))/(np.std(x))
-    return standard
+    scaler = StandardScaler().fit(x)
+    standard = scaler.transform(x)
+    return standard, scaler
 
-def destandardize(x, mean_used, std_used):
+def destandardize(x, scaler):
     """
     Reverses the standardization of an array using z-score
 
     Arg:
         x(array): Array to destandardize
+        scaler: a scaler object from the scikit preprocessing module
 
     Return:
         destandard(array): Non-standardized array 
     """
-    destandard = x * std_used + mean_used
+    destandard = scaler.inverse_transform(x)
     return destandard
 
 
 def log_normalize(df, columns, plus_1 = True):
     """
-    Transforms column values into log values and normalizes them using z-scores
+    Transforms column values into log values and normalizes them using z-scores and produces a sklearn scaler object for standarizing/destandarizing
 
     Arg:
         df(pdDataFrame): A dataframe with values to normalize
@@ -43,16 +46,24 @@ def log_normalize(df, columns, plus_1 = True):
 
     Return:
         df_norm(pdDataFrame): A dataframe with normalized log values in the specified columns
+        scaler: a scaler object from the scikit preprocessing module
     """
+    
     if plus_1:
-        df_log = np.log(df[columns]+1)
-        df_norm = df_log.apply(z_standardize)
-        return df_norm
-    df_log = np.log(df[columns])
-    df_norm = df_log.apply(z_standardize)
-    return df_norm
+        transformer = FunctionTransformer(np.log1p, validate=True, inverse_func=np.expm1, check_inverse=True)
+        df_log = transformer.transform(df[columns])
+        df_norm, scaler = z_standardize(df_log)
+        df = pd.DataFrame(df_norm)
+        df.columns = columns
+        return df, scaler
+    transformer = FunctionTransformer(np.log, validate=True, inverse_func=np.expm1, check_inverse=True)
+    df_log = transformer.transform(df[columns])
+    df_norm, scaler = z_standardize(df_log)
+    df = pd.DataFrame(df_norm)
+    df.columns = columns
+    return df, scaler
 
-def log_denormalize(df, columns, original_df, plus_1 = True):
+def log_denormalize(df, columns, scaler, plus_1 = True):
     """
     Transforms column values that we log transformed and standardized using z-scores back to their original values.
 
@@ -63,19 +74,19 @@ def log_denormalize(df, columns, original_df, plus_1 = True):
     Return:
         df_norm(pdDataFrame): A dataframe with denormalized values in the specified columns
     """
-    mean = np.mean(np.log(original_df[columns]))
-    std = np.std(np.log(original_df[columns]))
-    df_log = pd.DataFrame()
-    df_denorm = pd.DataFrame()
     if plus_1:
-        for column in columns:
-            df_log[column] = df[column].apply(destandardize, args=(mean[column], std[column]))
-            df_denorm[column] = np.exp(df_log[column])
-        return df_denorm
-    for column in columns:
-        df_log[column] = df[column].apply(destandardize, args=(mean[column], std[column]))
-        df_denorm[column] = np.exp(df_log[column])-1
-    return df_denorm
+        df_denorm = destandardize(df[columns], scaler)
+        transformer = FunctionTransformer(np.log1p, validate=True, inverse_func=np.expm1, check_inverse=True)
+        df_delog = transformer.inverse_transform(df_denorm)
+        df = pd.DataFrame(df_delog)
+        df.columns = columns
+        return df
+    df_denorm = destandardize(df[columns], scaler)
+    transformer = FunctionTransformer(np.log, validate=True, inverse_func=np.exp, check_inverse=True)
+    df_delog = transformer.inverse_transform(df_denorm)
+    df = pd.DataFrame(df_delog)
+    df.columns = columns
+    return df
 
 
 def missing_indicator(df, column):
@@ -220,10 +231,28 @@ def cross_val(model, X_train, y_train, splits=5, test_size=0.25, random_state=0)
     print("Validation score:", scores["test_score"].mean())
     return scores
 
-def predict_median_effect(column, df, original_df, model, target = 'price'):
-    predict_df = pd.DataFrame()
-    median = df.groupby(column).median().reset_index()
-    predict_df[column] = median[column]
-    predict_df[target] = model.predict(median)
-    predict_df[[column, target]] = log_denormalize(predict_df, [column, target], original_df, plus_1 = True)
+def predict_median_effect(df, variable_column, scaled_columns, scaler, model, target = 'price'):
+    median_df = df.groupby(variable_column).median().reset_index()
+    median_df.insert(0, target, model.predict(median_df))
+    predict_df = median_df[scaled_columns]
+    predict_df = log_denormalize(predict_df, predict_df.columns, scaler, plus_1 = True)
     return predict_df
+
+def predict_difference(model, data, variable, low, high, scaler, scaled_cols, target='price'):
+    z = list(zip(scaler.mean_, scaler.scale_))
+    scale_dict = dict(zip(scaled_cols, z))
+    if variable in scaled_cols:
+        standard_low = (np.log1p(low)-scale_dict[variable][0])/scale_dict[variable][1]
+        standard_high = (np.log1p(high)-scale_dict[variable][0])/scale_dict[variable][1]
+    else:
+        standard_low = low
+        standard_high = high
+    low_variables = data.groupby(variable).median().reset_index()
+    low_variables = low_variables[low_variables[variable] == standard_low]
+    low_prediction = model.predict(low_variables)
+    high_variables = data.groupby(variable).median().reset_index()
+    high_variables = high_variables[high_variables[variable] == standard_high]
+    high_prediction = model.predict(high_variables)
+    raw_difference = high_prediction - low_prediction
+    difference = np.expm1(raw_difference*scale_dict[target][1] + scale_dict[target][0])
+    return float(difference)
