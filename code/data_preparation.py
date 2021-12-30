@@ -144,7 +144,7 @@ def oridinal_encode(df, column):
     encoded = encoded.flatten()
     return cat, encoded
 
-def one_hot_encode(df, column):
+def one_hot_encode(df, column, prefix=None):
     """
     Produces an array of category names and an array of array contain boolean representing the categories
 
@@ -153,16 +153,22 @@ def one_hot_encode(df, column):
         column(str): A string which is the column label of the desired column
     
     Return:
-        cat(array): A numpy array containing strings of the categories in the column
+        cats(array): An array containing strings of the categories in the column (only returned if prefix not given)
+        prefixed(array): An array containing strings of the categories in the column with the specified prefix (only returned if prefix given)
         encoded(array): A numpy array containing arrays containing booleans representing the categories
     """
     c = df[[column]]
     ohe = OneHotEncoder(categories="auto", sparse=False, handle_unknown="ignore")
     ohe.fit(c)
-    cat = ohe.categories_
-    cat = list(cat[0])
+    cats = ohe.categories_
+    cats = list(cats[0])
     encoded = ohe.transform(c)
-    return cat, encoded
+    if prefix:
+        prefixed = []
+        for cat in cats:
+            prefixed.append(prefix+cat)
+        return prefixed, encoded
+    return cats, encoded
 
 def collinearity_check(df, min=0.75, max=1, exclude_max=True):
     """

@@ -1,6 +1,6 @@
 ﻿Zipcode,Neighborhood
 98010,Black Diamond
-98033,Maple Valley
+98038,Maple Valley
 98070,Vashon Island
 98023,Federal Way
 98003,Federal Way
@@ -22,8 +22,8 @@
 98077,Redmond
 98074,Sammamish
 98075,Sammamish
-98079,Issaquah
-98077,Issaquah
+98029,Issaquah
+98027,Issaquah
 98032,Kent
 98031,Kent
 98030,Kent
@@ -37,7 +37,7 @@
 98146,Burlen
 98168,Burlen
 98166,Burlen
-98145,Seatac
+98148,Seatac
 98158,Seatac
 98188,Seatac
 98006,Bellevue
@@ -56,6 +56,7 @@
 98108,SE Seattle
 98118,SE Seattle
 98134,SE Seattle
+98178,SE Seattle
 98121,Downtown
 98101,Downtown
 98104,Downtown
@@ -77,5 +78,5 @@
 98125,N Seattle
 98155,N Seattle
 98028,Kenmore
-98001,Bothell
+98011,Bothell
 98072,Woodinville
