@@ -45,29 +45,29 @@ The final regression had an R-squared value of 0.85.
 
 Here is a visualization of the performance of the model with some test data:
 
-![prediction](images/prediction_graph.png)
+![prediction](/images/prediction_graph.png)
 
 Using the coefficients from the model we can make predictions about the relative effects of various changes to the home.
 
 Condition predictions:
 
-![condition](images/condition.png)
+![condition](/images/condition.png)
 
 Grade predictions:
 
-![grade](images/grade.png)
+![grade](/images/grade.png)
 
 Renovation predictions:
 
-![renovation](images/renovation.png)
+![renovation](/images/renovation.png)
 
 Bathroom predictions:
 
-![bathroom](images/bathroom.png)
+![bathroom](/images/bathroom.png)
 
 Living Area predictions:
 
-![square_footage](images/sqft.png)
+![square_footage](/images/sqft.png)
 
 Some limitations of the model to note are that the underlying data had a high kurotosis of 4.984 even after the data was log normalized, this impacts the performance of the model and there was signficant multicollinearity between the square footage variables and the numbers of bathrooms, bedrooms and floors, which will impact the usefulness of the coefficients of the model in making inferences about those features.
 
