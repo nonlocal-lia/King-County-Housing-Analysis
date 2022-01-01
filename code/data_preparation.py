@@ -236,41 +236,41 @@ def give_prediction(model, variables, target='price', rnd=2, scaler=None, scaled
 def king_county_prediction(model, variables, target='price', rnd=2, scaler=None, scaled_columns=[]):
     var_dict = dict.fromkeys(variables, 0)
     print('Input Number of Bathrooms:')
-    num_bath = float(input())
+    num_bath = input()
     if (round(float(num_bath)) == float(num_bath)) and num_bath !='1':
         num_bath = num_bath +'.0'
     elif num_bath !='1':
         var_dict['bathrooms_'+num_bath]
     print('Input Number of Bedrooms:')
-    num_bed = float(input())
+    num_bed = input()
     if num_bed != '1':
         var_dict['bedrooms_'+num_bed]
     print('Input Number of Floors:')
-    num_floors = float(input())
-    if (round(float(num_floors)) == float(num_floors)) and num_floors !='1':
+    num_floors = input()
+    if round(float(num_floors) == float(num_floors)) and num_floors !='1':
         num_floors = num_floors +'.0'
     elif num_floors != '1':
         var_dict['bathrooms_'+num_floors]
     print('Input Neighborhood:')
-    neighborhood = float(input())
+    neighborhood = input()
     if neighborhood != 'Auburn':
         var_dict[neighborhood] = 1
     print('Input Renovated (new, old or never):')
-    ren = float(input())
+    ren = input()
     if ren == 'new':
         var_dict['new_ren'] = 1
     elif ren == 'old':
         var_dict['old_ren'] = 1
     print('Input Condition (Poor, Fair, Average, Good, Very Good):')
-    condition = float(input())
+    condition = input()
     if condition in ['Poor', 'Fair', 'Good', 'Very Good']:
         var_dict['cond_'+condition] = 1  
     print('Input Grade Number:')    
-    grade = float(input())
+    grade = input()
     if grade in ['5','6','7','8','9','10','11','12']:
         var_dict['cond_'+condition] = 1  
     print('Input Waterfront (y or n):')
-    water = float(input())
+    water = input()
     if water == 'y':
         var_dict['waterfront'] = 1
     print('Input Sqft Living Space:')
@@ -285,10 +285,11 @@ def king_county_prediction(model, variables, target='price', rnd=2, scaler=None,
     print('Input Sqft Surrounding Lots:')
     sqft_lot15 = float(input())
     var_dict['sqft_lot15'] = sqft_lot15
-    if scaler == 'logp1':
+    if scaler == 'log1p':
         for col in scaled_columns:
-           var_dict[col]=np.logp1(var_dict[col])
-        array_values = np.array(var_dict.values())
+            if col != target:
+                var_dict[col]=np.log1p(var_dict[col])
+        array_values = np.array(list(var_dict.values()))
         prediction = np.sum(array_values * model.coef_) + model.intercept_
         if target in scaled_columns:
             prediction = np.expm1(prediction)
@@ -296,8 +297,9 @@ def king_county_prediction(model, variables, target='price', rnd=2, scaler=None,
         z = list(zip(scaler.mean_, scaler.scale_))
         scale_dict = dict(zip(scaled_columns, z))
         for col in scaled_columns:
-            var_dict[col] = (var_dict[col]-scale_dict[col][0])/scale_dict[col][1]
-        array_values = np.array(var_dict.values())
+            if col != target:
+                var_dict[col] = (var_dict[col]-scale_dict[col][0])/scale_dict[col][1]
+        array_values = np.array(list(var_dict.values()))
         prediction = np.sum(array_values * model.coef_) + model.intercept_
         if target in scaled_columns:
             prediction = prediction*scale_dict[target][1] + scale_dict[target][0]    

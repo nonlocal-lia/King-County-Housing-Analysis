@@ -3,10 +3,13 @@ import pandas as pd
 import statsmodels.api as sm
 import scipy.stats as stats
 import matplotlib.pyplot as plt
+from matplotlib.axes._axes import _log as matplotlib_axes_logger
+import matplotlib.ticker as mticker
 import seaborn as sns
+plt.style.use('seaborn')
 
 
-def create_heatmap(df, size=(12, 12), save_name=None):
+def create_heatmap(df, size=(15,8), save_name=None):
     """
     Produces a correlation heat map from a panda dataframe and saves it if save_name input
 
@@ -35,7 +38,7 @@ def create_heatmap(df, size=(12, 12), save_name=None):
     return plt.show()
 
 
-def linearity_graph(model, X_test, y_test, size=(12, 12), save_name=None):
+def linearity_graph(model, X_test, y_test, size=(15,8), save_name=None):
     """
     Produces a linearity test scatter plot from a panda dataframe and saves it if save_name input
 
@@ -64,7 +67,7 @@ def linearity_graph(model, X_test, y_test, size=(12, 12), save_name=None):
     return plt.show()
 
 
-def normality_graph(model, X_test, y_test, size=(12, 12), save_name=None):
+def normality_graph(model, X_test, y_test, size=(15,8), save_name=None):
     """
     Produces a Q-Q plot from a panda dataframe and saves it if save_name input
 
@@ -81,13 +84,13 @@ def normality_graph(model, X_test, y_test, size=(12, 12), save_name=None):
     fig, ax = plt.subplots(figsize=size)
     preds = model.predict(X_test)
     residuals = (y_test - preds)
-    sm.graphics.qqplot(residuals, dist=stats.norm, line='45', fit=True)
+    sm.graphics.qqplot(residuals, dist=stats.norm, line='45', fit=True, ax=ax)
     if save_name:
         plt.savefig(f'images/{save_name}.png')
     return plt.show()
 
 
-def homoscedasticity_graph(model, X_test, y_test, size=(12, 12), save_name=None):
+def homoscedasticity_graph(model, X_test, y_test, size=(15,8), save_name=None):
     """
     Produces a homoscedasticity test scatter plot from a panda dataframe and saves it if save_name input
 
@@ -114,7 +117,7 @@ def homoscedasticity_graph(model, X_test, y_test, size=(12, 12), save_name=None)
     return plt.show()
 
 
-def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price', increase_type='Percent', size=(12, 12), save_name=None):
+def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price', increase_type='Percent', size=(15,8), rotate=None, fix_names = True, save_name=None):
     """
     Produces a bar graph of the coefficients from a panda dataframe and saves it if save_name input
 
@@ -134,10 +137,16 @@ def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price', in
     for cat in categories:
         coefs.append(float(coef_df[cat]))
     fig, ax = plt.subplots(figsize=size)
-    ax = plt.bar(categories, coefs)
+    x_labels = categories.copy()
+    if fix_names:
+        for i, cat in enumerate(categories):
+            x_labels[i] = cat.replace('_', ' ').title()
+    ax = plt.bar(x_labels, coefs)
     plt.ylabel("{x} Increase in {y}".format(x=increase_type, y=target_name))
-    plt.title("Predicted {x} Increase in {y} Relative to {x}".format(
+    plt.title("Predicted {x} Increase in {y} Relative to {z}".format(
         x=increase_type, y=target_name, z=dropped_var))
+    if rotate:
+        plt.xticks(rotation = rotate)
     if save_name:
         plt.savefig(f'images/{save_name}.png')
     return plt.show()
