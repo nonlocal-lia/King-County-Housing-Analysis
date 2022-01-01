@@ -5,9 +5,9 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def create_heatmap(df, size=(12,12)):
+def create_heatmap(df, size=(12,12), save_name=None):
     """
-    Produces a correlation heat map from a panda dataframe
+    Produces a correlation heat map from a panda dataframe and saves it if save_name input
 
     Arg:
         df(pdDataFrame): a dataframe to plot
@@ -15,6 +15,7 @@ def create_heatmap(df, size=(12,12)):
 
     Return:
         Displays heat map plot
+        Stores graph in image folder if save_name is input
     """
     corr = df.corr()
     fig, ax = plt.subplots(figsize=size)
@@ -26,11 +27,13 @@ def create_heatmap(df, size=(12,12)):
         cbar_kws={"label": "Correlation", "orientation": "horizontal", "pad": .2, "extend": "both"}
         )
     ax.set_title("Heatmap of Correlation Between Attributes (Including Target)")
+    if save_name:
+        plt.savefig(f'images/{save_name}.png')
     return plt.show()
 
-def linearity_graph(model, X_test, y_test, size=(12,12)):
+def linearity_graph(model, X_test, y_test, size=(12,12), save_name=None):
     """
-    Produces a linearity test scatter plot from a panda dataframe
+    Produces a linearity test scatter plot from a panda dataframe and saves it if save_name input
 
     Arg:
         model: a Scikit learn OLS model constructed for the variables input
@@ -40,6 +43,7 @@ def linearity_graph(model, X_test, y_test, size=(12,12)):
 
     Return:
         Displays the linearity plot
+        Stores graph in image folder if save_name is input
     """
 
     preds = model.predict(X_test)
@@ -50,11 +54,13 @@ def linearity_graph(model, X_test, y_test, size=(12,12)):
     ax.set_xlabel("Actual Value")
     ax.set_ylabel("Predicted Value")
     ax.legend()
+    if save_name:
+        plt.savefig(f'images/{save_name}.png')
     return plt.show()
 
-def normality_graph(model, X_test, y_test, size=(12,12)):
+def normality_graph(model, X_test, y_test, size=(12,12), save_name=None):
     """
-    Produces a Q-Q plot from a panda dataframe
+    Produces a Q-Q plot from a panda dataframe and saves it if save_name input
 
     Arg:
         model: a Scikit learn OLS model constructed for the variables input
@@ -64,16 +70,19 @@ def normality_graph(model, X_test, y_test, size=(12,12)):
 
     Return:
         Displays the normality plot
+        Stores graph in image folder if save_name is input
     """
     fig, ax = plt.subplots(figsize=size)
     preds = model.predict(X_test)
     residuals = (y_test - preds)
     sm.graphics.qqplot(residuals, dist=stats.norm, line='45', fit=True)
+    if save_name:
+        plt.savefig(f'images/{save_name}.png')
     return plt.show()
 
-def homoscedasticity_graph(model, X_test, y_test, size=(12,12)):
+def homoscedasticity_graph(model, X_test, y_test, size=(12,12), save_name=None):
     """
-    Produces a homoscedasticity test scatter plot from a panda dataframe
+    Produces a homoscedasticity test scatter plot from a panda dataframe and saves it if save_name input
 
     Arg:
         model: a Scikit learn OLS model constructed for the variables input
@@ -83,6 +92,7 @@ def homoscedasticity_graph(model, X_test, y_test, size=(12,12)):
 
     Return:
         Displays the homoscedasticity plot
+        Stores graph in image folder if save_name is input
     """
     fig, ax = plt.subplots(figsize=size)
     preds = model.predict(X_test)
@@ -91,11 +101,13 @@ def homoscedasticity_graph(model, X_test, y_test, size=(12,12)):
     ax.plot(preds, [0 for i in range(len(X_test))], linestyle="--", color='orange', label="Perfect Fit")
     ax.set_xlabel("Predicted Value")
     ax.set_ylabel("Actual - Predicted Value")
+    if save_name:
+        plt.savefig(f'images/{save_name}.png')
     return plt.show()
 
-def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price', increase_type = 'Percent', size=(12,12)):
+def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price', increase_type = 'Percent', size=(12,12), save_name=None):
     """
-    Produces a bar graph of the coefficients from a panda dataframe
+    Produces a bar graph of the coefficients from a panda dataframe and saves it if save_name input
 
     Arg:
         coef_df(pdDataFrame): a dataframe containing the coefficient to graph
@@ -107,6 +119,7 @@ def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price', in
 
     Return:
         Displays the bar graph of the listed categories coefficients
+        Stores graph in image folder if save_name is input
     """
     coefs = [] 
     for cat in categories:
@@ -115,4 +128,6 @@ def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price', in
     ax = plt.bar(categories, coefs)
     plt.ylabel("{x} Increase in {y}".format(x=increase_type, y=target_name))
     plt.title("Predicted {x} Increase in {y} Relative to {x}".format(x=increase_type, y=target_name, z=dropped_var))
+    if save_name:
+        plt.savefig(f'images/{save_name}.png')
     return plt.show()
