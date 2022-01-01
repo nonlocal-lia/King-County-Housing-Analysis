@@ -53,9 +53,12 @@ The final regression had an R-squared value of 0.85 and a mean-squared error of 
 
 ### Conclusions
 
-* Tell your client X
-* Tell your client Y
-* Tell your client Z
+When advising your clients, you can give the following pieces of advice:
+    
+* Increasing the grade score of a home by one level will increase the home value by around 10% for grades less than 8 and by about 20% for higher grades.
+* Renovating an unrenovated home will typically increase its price around 14%, but only by around 2% if it has been previously renovated.
+* Increasing the square footage of the home will  increase the home price by about 0.44% per 1% of added space.
+* Adding an additional bathroom may increase the price by around 5% but is highly dependent on context.
 
 ### Limitations and Future Work
 

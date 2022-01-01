@@ -1,4 +1,3 @@
-import matplotlib
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -45,3 +44,12 @@ def homoscedasticity_graph(model, X_test, y_test):
     ax.set_xlabel("Predicted Value")
     ax.set_ylabel("Actual - Predicted Value")
     return plt.show()
+
+def one_hot_coef_graph(coef_df, categories, dropped_var, target_name='Price'):
+    coefs = [] 
+    for cat in categories:
+        coefs.append(float(coef_df[cat]))
+    fig, ax = plt.subplots(figsize=(15, 8))
+    ax = plt.bar(categories, coefs)
+    plt.ylabel("Percent Increase in {}".format(target_name))
+    plt.title("Predicted Percent Increase in {x} Relative to {y}".format(x=target_name, y=dropped_var));
