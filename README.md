@@ -63,7 +63,7 @@ Renovation predictions:
 
 Bathroom predictions:
 
-![bathroom](/images/bathroom.png)
+![bathrooms](/images/bathrooms.png)
 
 Living Area predictions:
 
